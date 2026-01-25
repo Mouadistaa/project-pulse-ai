@@ -94,6 +94,9 @@ project-pulse-ai/
 └── README.md
 ```
 
+## Database
+- ER Diagram: [docs/ERD.md](docs/ERD.md)
+
 ---
 
 ## 🗺️ Roadmap
