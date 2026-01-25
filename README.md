@@ -33,6 +33,69 @@ Project Pulse AI est un tableau de bord intelligent de pilotage projet qui agrè
 
 ---
 
+## 📁 Structure du projet
+
+Le dépôt est organisé en **monorepo** (frontend + backend + infra + docs), avec une séparation claire des modules métiers.
+
+```txt
+project-pulse-ai/
+├── .github/
+│   └── workflows/
+│       ├── ci.yml                      # Lint + tests (front/back)
+│       └── docker.yml                  # Build images (option)
+├── docs/
+│   ├── architecture/
+│   │   ├── decisions/                  # ADR (Architecture Decision Records)
+│   │   ├── diagrams/                   # PlantUML / schémas
+│   │   └── README.md                   # Vue d’ensemble architecture
+│   ├── api/
+│   │   └── openapi.md                  # Convention API (si besoin)
+│   ├── product/
+│   │   ├── personas.md
+│   │   ├── metrics_definitions.md      # Définitions KPI (p50/p85, WIP, etc.)
+│   │   └── risk_rules.md               # Règles risques + seuils + explications
+│   └── runbooks/
+│       ├── local_setup.md              # Setup local
+│       └── troubleshooting.md
+├── infra/
+│   ├── docker/
+│   │   ├── postgres/                   # init scripts
+│   │   └── grafana/                    # dashboards (option)
+│   └── docker-compose.yml              # DB + app + (option) grafana/prometheus
+├── backend/
+│   ├── app/
+│   │   ├── main.py                     # FastAPI app + routers
+│   │   ├── core/                       # config, logs, sécurité, erreurs
+│   │   ├── db/                         # session, models, migrations
+│   │   ├── modules/                    # intégrations, ingestion, analytics, forecast, rapports
+│   │   ├── schemas/                    # Pydantic schemas
+│   │   └── tests/                      # tests backend
+│   ├── pyproject.toml
+│   ├── Dockerfile
+│   └── README.md
+├── frontend/
+│   ├── app/                            # Next.js App Router
+│   ├── components/                     # UI, charts, layout
+│   ├── lib/                            # client API + utils
+│   ├── styles/
+│   ├── public/
+│   ├── package.json
+│   ├── next.config.js
+│   └── README.md
+├── scripts/
+│   ├── dev.ps1                         # lance tout (Windows)
+│   ├── init.ps1                        # setup (env, deps)
+│   └── seed.ps1                        # seed DB fake data
+├── .editorconfig
+├── .env.example
+├── docker-compose.yml                  # raccourci vers infra (option)
+├── package.json                        # scripts monorepo (pnpm/turbo)
+├── turbo.json                          # pipeline tasks
+└── README.md
+```
+
+---
+
 ## 🗺️ Roadmap
 ### Phase 0 — Setup
 - [ ] CI (lint/tests)
