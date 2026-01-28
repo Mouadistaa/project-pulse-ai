@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from app.modules.analytics.models import MetricDaily
-from app.modules.integrations.models import PullRequest, JiraIssue
+from app.modules.integrations.models import PullRequest, TrelloCard
 from datetime import date, datetime, timedelta
 import statistics
 
@@ -68,20 +68,28 @@ async def compute_daily_metrics(session: AsyncSession, workspace_id: str):
             
     wip = open_prs_count
     
-    # Bug Ratio: Bugs / Total Issues Resolved
-    result = await session.execute(select(JiraIssue).where(JiraIssue.workspace_id == workspace_id))
-    issues = result.scalars().all()
+    # Bug Ratio: Bugs / Total Cards Resolved (from Trello cards)
+    result = await session.execute(select(TrelloCard).where(TrelloCard.workspace_id == workspace_id))
+    cards = result.scalars().all()
     
     bugs = 0
     total_resolved = 0
-    for issue in issues:
-        raw = issue.raw_data
-        if raw.get('status') in ['Done', 'Resolved', 'Closed']: # Simplified
-             res_date = datetime.fromisoformat(raw['resolutiondate']).date()
-             if res_date >= window_start:
-                 total_resolved += 1
-                 if raw.get('issuetype') == 'Bug':
-                     bugs += 1
+    for card in cards:
+        raw = card.raw_data
+        # Check if card is in a "done" state
+        status = raw.get('status', card.list_name or '')
+        if status.lower() in ['done', 'resolved', 'closed', 'complete']:
+            res_date_str = raw.get('resolutiondate')
+            if res_date_str:
+                try:
+                    res_date = datetime.fromisoformat(res_date_str).date()
+                    if res_date >= window_start:
+                        total_resolved += 1
+                        card_type = raw.get('cardtype', '').lower()
+                        if card_type == 'bug':
+                            bugs += 1
+                except (ValueError, TypeError):
+                    pass
     
     bug_ratio = (bugs / total_resolved) if total_resolved > 0 else 0
     

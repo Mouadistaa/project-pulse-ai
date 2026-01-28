@@ -26,19 +26,30 @@ async def seed():
             workspace_slug="demo-workspace"
         ))
         
-        # 2. Add Integration (Mock)
-        print("Adding Integration...")
-        integration = Integration(
+        # 2. Add GitHub Integration
+        print("Adding GitHub Integration...")
+        github_integration = Integration(
             workspace_id=user.workspace_id,
             type=IntegrationType.GITHUB,
             status=IntegrationStatus.ACTIVE,
             name="Demo GitHub",
             config={"repo": "demo/repo"}
         )
-        session.add(integration)
+        session.add(github_integration)
+        
+        # 3. Add Trello Integration
+        print("Adding Trello Integration...")
+        trello_integration = Integration(
+            workspace_id=user.workspace_id,
+            type=IntegrationType.TRELLO,
+            status=IntegrationStatus.ACTIVE,
+            name="Demo Trello",
+            config={"boards": ["demo-board"]}
+        )
+        session.add(trello_integration)
         await session.commit()
         
-        # 3. Trigger Sync
+        # 4. Trigger Sync
         print("Triggering Data Sync...")
         # Set Env var strictly for this call (though typically set in docker env)
         os.environ["MOCK_MODE"] = "true"

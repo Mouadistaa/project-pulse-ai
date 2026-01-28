@@ -3,7 +3,7 @@ from uuid import UUID
 from typing import Optional, Dict, Any
 
 class IntegrationBase(BaseModel):
-    type: str # JIRA, GITHUB
+    type: str  # TRELLO, GITHUB
     name: str
     config: Optional[Dict[str, Any]] = {}
     workspace_id: UUID

@@ -6,7 +6,7 @@ import enum
 from app.db.models import Base
 
 class IntegrationType(str, enum.Enum):
-    JIRA = "JIRA"
+    TRELLO = "TRELLO"
     GITHUB = "GITHUB"
 
 class IntegrationStatus(str, enum.Enum):
@@ -46,12 +46,14 @@ class PullRequest(Base):
     repo_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("repos.id"))
     workspace_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("workspaces.id"))
 
-class JiraIssue(Base):
-    __tablename__ = "jira_issues"
+class TrelloCard(Base):
+    """Work item from Trello - replaces JiraIssue."""
+    __tablename__ = "trello_cards"
     
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    external_id: Mapped[str] = mapped_column(String, index=True)
-    key: Mapped[str] = mapped_column(String, index=True)
+    external_id: Mapped[str] = mapped_column(String, index=True)  # Trello card ID
+    name: Mapped[str] = mapped_column(String, index=True)  # Card title/name
+    list_name: Mapped[str] = mapped_column(String, nullable=True)  # Current list (e.g., "In Progress", "Done")
     raw_data: Mapped[dict] = mapped_column(JSON)
     
     workspace_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("workspaces.id"))

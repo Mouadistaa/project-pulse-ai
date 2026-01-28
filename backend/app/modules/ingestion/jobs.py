@@ -1,11 +1,12 @@
 import asyncio
 import random
 import uuid
+import os
 from datetime import datetime, timedelta, date
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.db.session import AsyncSessionLocal
-from app.modules.integrations.models import Integration, Repo, PullRequest, JiraIssue
+from app.modules.integrations.models import Integration, Repo, PullRequest, TrelloCard
 from app.modules.analytics.metrics import compute_daily_metrics
 from app.modules.analytics.risk_engine import compute_risks
 from app.core.logging import logging
@@ -15,10 +16,11 @@ logger = logging.getLogger(__name__)
 async def generate_mock_data(session: AsyncSession, integration: Integration):
     """
     Generates deterministic demo data if MOCK_MODE is enabled.
+    Creates mock PRs for GitHub integration and mock Trello cards for Trello integration.
     """
     workspace_id = integration.workspace_id
     
-    # Create or Get Repo
+    # Create or Get Repo (for GitHub integration)
     result = await session.execute(select(Repo).where(Repo.workspace_id == workspace_id))
     repo = result.scalars().first()
     if not repo:
@@ -64,34 +66,54 @@ async def generate_mock_data(session: AsyncSession, integration: Integration):
             )
             session.add(pr)
     
-    # Generate Jira Issues
+    # Generate Trello Cards (work items)
+    list_names = ["To Do", "In Progress", "In Review", "Done"]
+    card_types = ["Feature", "Bug", "Task", "Improvement"]
+    
     for i in range(30):
         day = today - timedelta(days=i)
-        random.seed(f"jira-{day}-{integration.id}")
+        random.seed(f"trello-{day}-{integration.id}")
         
-        num_issues = random.randint(1, 5)
-        for j in range(num_issues):
-            key = f"ISSUE-{i}-{j}"
+        num_cards = random.randint(1, 5)
+        for j in range(num_cards):
+            card_id = f"card-{i}-{j}"
             # Check exist
-            res = await session.execute(select(JiraIssue).where(JiraIssue.key == key))
+            res = await session.execute(select(TrelloCard).where(TrelloCard.external_id == card_id))
             if res.scalars().first():
                 continue
 
             created_at = datetime.combine(day, datetime.min.time()) + timedelta(hours=random.randint(9, 17))
-            resolved_at = created_at + timedelta(days=random.randint(1, 7))
             
-            issue = JiraIssue(
+            # Determine card status based on age (older cards more likely to be done)
+            if i > 20:
+                list_name = "Done"
+            elif i > 10:
+                list_name = random.choice(["Done", "In Review", "In Progress"])
+            else:
+                list_name = random.choice(list_names)
+            
+            # Resolution date for done cards
+            resolved_at = None
+            if list_name == "Done":
+                resolved_at = created_at + timedelta(days=random.randint(1, 7))
+            
+            card_type = "Bug" if random.random() < 0.3 else random.choice(["Feature", "Task"])
+            
+            card = TrelloCard(
                 workspace_id=workspace_id,
-                external_id=str(uuid.uuid4()),
-                key=key,
+                external_id=card_id,
+                name=f"{card_type}-{i}-{j}: Demo work item",
+                list_name=list_name,
                 raw_data={
                     "created": created_at.isoformat(),
-                    "resolutiondate": resolved_at.isoformat(),
-                    "status": "Done",
-                    "issuetype": "Bug" if random.random() < 0.3 else "Story"
+                    "resolutiondate": resolved_at.isoformat() if resolved_at else None,
+                    "status": list_name,
+                    "cardtype": card_type,
+                    "labels": [card_type.lower()],
+                    "due": (created_at + timedelta(days=7)).isoformat() if random.random() > 0.5 else None
                 }
             )
-            session.add(issue)
+            session.add(card)
 
     await session.commit()
 
@@ -107,6 +129,8 @@ async def sync_workspace(workspace_id: str):
                 await generate_mock_data(session, integration)
             else:
                 # Real sync logic would go here
+                # For GitHub: use GITHUB_TOKEN to fetch PRs
+                # For Trello: use TRELLO_KEY and TRELLO_TOKEN to fetch cards
                 pass
         
         # 2. Compute Metrics
@@ -132,5 +156,4 @@ def sync_data_job():
              for w in workspaces:
                  await sync_workspace(w.id)
     
-    import os
     asyncio.run(run_all())
