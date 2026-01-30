@@ -41,8 +41,8 @@ def upgrade() -> None:
     op.create_table(
         'integrations',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column('type', sa.String(), nullable=False),
-        sa.Column('status', sa.String(), nullable=False, server_default='ACTIVE'),
+        sa.Column('type', sa.Enum('TRELLO', 'GITHUB', name='integration_type', native_enum=False), nullable=False),
+        sa.Column('status', sa.Enum('ACTIVE', 'DISABLED', name='integration_status', native_enum=False), nullable=False, server_default='ACTIVE'),
         sa.Column('name', sa.String(), nullable=False),
         sa.Column('secrets_ref', sa.String(), nullable=True),
         sa.Column('config', postgresql.JSON(), nullable=True, server_default='{}'),

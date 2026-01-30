@@ -33,7 +33,7 @@ async def seed():
             type=IntegrationType.GITHUB,
             status=IntegrationStatus.ACTIVE,
             name="Demo GitHub",
-            config={"repo": "demo/repo"}
+            config={"repos": "owner/repo"}
         )
         session.add(github_integration)
         
@@ -44,7 +44,7 @@ async def seed():
             type=IntegrationType.TRELLO,
             status=IntegrationStatus.ACTIVE,
             name="Demo Trello",
-            config={"boards": ["demo-board"]}
+            config={"board_ids": ["<boardId>"]}
         )
         session.add(trello_integration)
         await session.commit()

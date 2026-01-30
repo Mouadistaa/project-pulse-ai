@@ -8,8 +8,37 @@ from app.modules.integrations.models import Integration
 from app.modules.integrations.schemas import Integration as IntegrationSchema, IntegrationCreate, IntegrationUpdate
 from app.modules.users.routes import get_current_admin_user
 from app.modules.users.schemas import User
-
+from app.modules.integrations.github.client import GitHubClient
+from app.modules.integrations.trello.client import TrelloClient
 router = APIRouter()
+
+@router.get("/validate")
+async def validate_tokens(
+    current_user: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    results = {"github": {"ok": False}, "trello": {"ok": False}}
+
+    # GitHub
+    try:
+        gh = GitHubClient()
+        user = await gh.get_user()
+        results["github"] = {"ok": True, "login": user.get("login")}
+    except Exception as e:
+        results["github"] = {"ok": False, "error": str(e)}
+
+    # Trello
+    try:
+        tr = TrelloClient()
+        boards = await tr.get_boards()
+        results["trello"] = {
+            "ok": True,
+            "boards": [{"id": b.get("id"), "name": b.get("name")} for b in boards[:10]],
+        }
+    except Exception as e:
+        results["trello"] = {"ok": False, "error": str(e)}
+
+    return results
 
 @router.post("/", response_model=IntegrationSchema)
 async def create_integration(
